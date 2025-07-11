@@ -1,14 +1,11 @@
 import { supabase } from '../lib/supabase'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { BloodGroup, BloodInventory } from '../types'
 
 export class InventoryService {
   static async getInventory(hospitalId: string) {
     try {
-      // Check if Supabase is properly configured
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_') || supabaseKey.includes('your_')) {
+      if (!isSupabaseConfigured()) {
         return []; // Return empty array for demo mode
       }
 

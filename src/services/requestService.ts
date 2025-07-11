@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { DonationRequest, BloodGroup } from '../types'
 
 export class RequestService {
@@ -53,11 +54,7 @@ export class RequestService {
     urgency?: string
   }) {
     try {
-      // Check if Supabase is properly configured
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_') || supabaseKey.includes('your_')) {
+      if (!isSupabaseConfigured()) {
         return []; // Return empty array for demo mode
       }
 
