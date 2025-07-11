@@ -19,7 +19,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     role: 'donor' as 'donor' | 'recipient' | 'hospital',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { login, register, loading } = useAuth();
+  const { login, register, loading, isDemo } = useAuth();
 
   if (!isOpen) return null;
 
@@ -206,7 +206,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </p>
           </div>
 
-          {isLogin && (
+          {isDemo && (
+            <div className="mt-4 text-center">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-medium text-blue-800 mb-2">Demo Mode</h4>
+                <p className="text-xs text-blue-700 mb-2">
+                  Try the app with these demo accounts:
+                </p>
+                <div className="text-xs text-blue-600 space-y-1">
+                  <div>• donor@demo.com (Blood Donor)</div>
+                  <div>• recipient@demo.com (Blood Recipient)</div>
+                  <div>• hospital@demo.com (Hospital)</div>
+                  <div>• admin@demo.com (Administrator)</div>
+                </div>
+                <p className="text-xs text-blue-600 mt-2">Password: any text</p>
+              </div>
+            </div>
+          )}
+
+          {isLogin && !isDemo && (
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-500">
                 Demo accounts: donor@demo.com, recipient@demo.com, hospital@demo.com, admin@demo.com

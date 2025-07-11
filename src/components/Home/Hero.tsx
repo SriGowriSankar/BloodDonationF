@@ -1,14 +1,24 @@
 import React from 'react';
 import { Heart, Users, MapPin, Calendar } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeroProps {
   onGetStarted: () => void;
 }
 
 const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
+  const { isDemo } = useAuth();
+
   return (
     <section id="home" className="bg-gradient-to-br from-red-50 to-red-100 min-h-screen flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        {isDemo && (
+          <div className="bg-blue-600 text-white text-center py-3 px-6 rounded-lg mb-8">
+            <p className="text-sm font-medium">
+              🚀 Demo Mode: Try the app with demo accounts (donor@demo.com, hospital@demo.com, etc.)
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">

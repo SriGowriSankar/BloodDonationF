@@ -11,7 +11,7 @@ import Notifications from './Notifications';
 import UserManagement from './UserManagement';
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
   if (!user) {
@@ -19,7 +19,18 @@ const Dashboard: React.FC = () => {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600">Please log in to access the dashboard.</p>
+          <p className="text-gray-600 mb-4">Please log in to access the dashboard.</p>
+          {isDemo && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-sm text-blue-700 mb-2">Demo Mode: Use these accounts to login:</p>
+              <div className="text-xs text-blue-600 space-y-1">
+                <div>• donor@demo.com</div>
+                <div>• recipient@demo.com</div>
+                <div>• hospital@demo.com</div>
+                <div>• admin@demo.com</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -45,7 +56,17 @@ const Dashboard: React.FC = () => {
         return <UserManagement />;
       case 'profile':
         return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="space-y-6">
+            {isDemo && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-yellow-800 mb-2">Demo Mode</h3>
+                <p className="text-sm text-yellow-700">
+                  You're using the demo version. To enable full functionality including data persistence, 
+                  please set up Supabase by clicking "Connect to Supabase" in the top right.
+                </p>
+              </div>
+            )}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Settings</h2>
             <div className="space-y-4">
               <div>
@@ -84,6 +105,7 @@ const Dashboard: React.FC = () => {
               <button className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
                 Update Profile
               </button>
+            </div>
             </div>
           </div>
         );
