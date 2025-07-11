@@ -1,10 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { DonationRequest, BloodCamp, Donor, BloodGroup, User, BloodInventory, Notification, ContactRequest, InventoryUpdate, AnalyticsData } from '../types';
-import { DonorService } from '../services/donorService';
-import { RequestService } from '../services/requestService';
-import { CampService } from '../services/campService';
-import { InventoryService } from '../services/inventoryService';
-import { NotificationService } from '../services/notificationService';
 import { useAuth } from './AuthContext';
 
 interface AppContextType {
@@ -56,159 +51,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [bloodInventory, setBloodInventory] = useState<BloodInventory[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  useEffect(() => {
-    // Load data when user is authenticated
-    if (user) {
-      loadData();
-    }
-  }, [user]);
-
-  const loadData = async () => {
-    try {
-      // Check if Supabase is properly configured
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_') || supabaseKey.includes('your_')) {
-        console.log('Supabase not configured, using demo mode');
-        return;
-      }
-
-      // Load requests
-      const requests = await RequestService.getRequests();
-      setDonationRequests(requests);
-
-      // Load camps
-      const camps = await CampService.getCamps();
-      setBloodCamps(camps);
-
-      // Load notifications
-      if (user) {
-        const userNotifications = await NotificationService.getNotifications(user.id);
-        setNotifications(userNotifications);
-      }
-
-      // Load inventory if hospital
-      if (user?.role === 'hospital') {
-        const inventory = await InventoryService.getInventory(user.id);
-        setBloodInventory(inventory);
-      }
-    } catch (error) {
-      console.log('Database not set up, running in demo mode:', error);
-      // Don't throw error, just run in demo mode
-    }
-  };
-
   const addDonationRequest = (request: Omit<DonationRequest, 'id' | 'createdAt'>) => {
-    if (!user) return;
-
-    RequestService.createRequest({
-      recipientId: user.id,
-      recipientName: request.recipientName,
-      bloodGroup: request.bloodGroup,
-      unitsNeeded: request.unitsNeeded,
-      address: request.location.address,
-      city: request.location.city,
-      state: request.location.state,
-      urgency: request.urgency,
-      hospitalId: request.hospitalId,
-    }).then(newRequest => {
-      const formattedRequest: DonationRequest = {
-        id: newRequest.id,
-        recipientId: newRequest.recipient_id,
-        recipientName: newRequest.recipient_name,
-        bloodGroup: newRequest.blood_group as BloodGroup,
-        unitsNeeded: newRequest.units_needed,
-        location: {
-          address: newRequest.address,
-          city: newRequest.city,
-          state: newRequest.state,
-          latitude: newRequest.latitude,
-          longitude: newRequest.longitude
-        },
-        urgency: newRequest.urgency,
-        status: newRequest.status,
-        matchedDonors: [],
-        hospitalId: newRequest.hospital_id,
-        scheduledDate: newRequest.scheduled_date,
-        createdAt: newRequest.created_at
-      };
-      setDonationRequests(prev => [formattedRequest, ...prev]);
-    }).catch(error => {
-      console.error('Error creating request:', error);
-    });
+    const newRequest: DonationRequest = {
+      ...request,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    setDonationRequests(prev => [newRequest, ...prev]);
   };
 
   const updateDonationRequest = (id: string, updates: Partial<DonationRequest>) => {
-    RequestService.updateRequestStatus(id, updates.status || 'pending', updates)
-      .then(() => {
-        setDonationRequests(prev =>
-          prev.map(request =>
-            request.id === id ? { ...request, ...updates } : request
-          )
-        );
-      })
-      .catch(error => {
-        console.error('Error updating request:', error);
-      });
+    setDonationRequests(prev =>
+      prev.map(request =>
+        request.id === id ? { ...request, ...updates } : request
+      )
+    );
   };
 
   const addBloodCamp = (camp: Omit<BloodCamp, 'id'>) => {
-    if (!user) return;
-
-    CampService.createCamp({
-      hospitalId: user.id,
-      title: camp.title,
-      date: camp.date,
-      time: camp.time,
-      address: camp.location.address,
-      city: camp.location.city,
-      state: camp.location.state,
-      slotsAvailable: camp.slotsAvailable
-    }).then(newCamp => {
-      const formattedCamp: BloodCamp = {
-        id: newCamp.id,
-        hospitalId: newCamp.hospital_id,
-        hospitalName: user.name,
-        title: newCamp.title,
-        date: newCamp.date,
-        time: newCamp.time,
-        location: {
-          address: newCamp.address,
-          city: newCamp.city,
-          state: newCamp.state,
-          latitude: newCamp.latitude,
-          longitude: newCamp.longitude
-        },
-        slotsAvailable: newCamp.slots_available,
-        slotsBooked: newCamp.slots_booked,
-        registeredDonors: [],
-        status: newCamp.status
-      };
-      setBloodCamps(prev => [formattedCamp, ...prev]);
-    }).catch(error => {
-      console.error('Error creating camp:', error);
-    });
+    const newCamp: BloodCamp = {
+      ...camp,
+      id: Date.now().toString(),
+    };
+    setBloodCamps(prev => [newCamp, ...prev]);
   };
 
   const registerForCamp = (campId: string, donorId: string) => {
-    CampService.registerForCamp(campId, donorId)
-      .then(() => {
-        setBloodCamps(prev =>
-          prev.map(camp =>
-            camp.id === campId
-              ? {
-                  ...camp,
-                  registeredDonors: [...camp.registeredDonors, donorId],
-                  slotsBooked: camp.slotsBooked + 1,
-                }
-              : camp
-          )
-        );
-      })
-      .catch(error => {
-        console.error('Error registering for camp:', error);
-      });
+    setBloodCamps(prev =>
+      prev.map(camp =>
+        camp.id === campId
+          ? {
+              ...camp,
+              registeredDonors: [...camp.registeredDonors, donorId],
+              slotsBooked: camp.slotsBooked + 1,
+            }
+          : camp
+      )
+    );
   };
 
   const searchDonors = (filters: {
@@ -218,96 +97,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     maxDistance?: number;
     lastDonationDays?: number;
   }) => {
-    // For now, return filtered mock data
-    // In production, this would call DonorService.searchDonors
-    DonorService.searchDonors({
-      bloodGroup: filters.bloodGroup,
-      city: filters.location,
-      available: filters.available
-    }).then(results => {
-      setDonors(results);
-    }).catch(error => {
-      console.error('Error searching donors:', error);
-    });
-    
+    // Return mock donors for demo
     return donors;
   };
 
   const contactDonor = async (donorId: string, request: ContactRequest) => {
-    try {
-      await NotificationService.createNotification({
-        userId: donorId,
-        title: 'New Contact Request',
-        message: `${request.senderName} has sent you a message: ${request.message}`,
-        type: 'donation_request',
-        priority: request.urgency
-      });
-    } catch (error) {
-      console.error('Error contacting donor:', error);
-      throw error;
-    }
+    // Mock contact functionality
+    console.log('Contacting donor:', donorId, request);
   };
 
   const updateBloodInventory = (bloodGroup: BloodGroup, update: InventoryUpdate) => {
-    if (!user) return;
-
-    InventoryService.updateInventory(
-      user.id,
-      bloodGroup,
-      update.units,
-      update.updatedBy,
-      update.reason
-    ).then(() => {
-      setBloodInventory(prev =>
-        prev.map(item =>
-          item.bloodGroup === bloodGroup
-            ? {
-                ...item,
-                unitsAvailable: Math.max(0, item.unitsAvailable + update.units),
-                lastUpdated: new Date().toISOString(),
-              }
-            : item
-        )
-      );
-    }).catch(error => {
-      console.error('Error updating inventory:', error);
-    });
+    setBloodInventory(prev =>
+      prev.map(item =>
+        item.bloodGroup === bloodGroup
+          ? {
+              ...item,
+              unitsAvailable: Math.max(0, item.unitsAvailable + update.units),
+              lastUpdated: new Date().toISOString(),
+            }
+          : item
+      )
+    );
   };
 
   const getInventoryAlerts = () => {
-    if (!user || user.role !== 'hospital') return [];
-
-    // For now, return local alerts
-    // In production, this would call InventoryService.getInventoryAlerts
-    return InventoryService.getInventoryAlerts(user.id);
+    return [];
   };
 
   const markNotificationAsRead = (id: string) => {
-    NotificationService.markAsRead(id)
-      .then(() => {
-        setNotifications(prev =>
-          prev.map(notification =>
-            notification.id === id ? { ...notification, read: true } : notification
-          )
-        );
-      })
-      .catch(error => {
-        console.error('Error marking notification as read:', error);
-      });
+    setNotifications(prev =>
+      prev.map(notification =>
+        notification.id === id ? { ...notification, read: true } : notification
+      )
+    );
   };
 
   const deleteNotification = (id: string) => {
-    NotificationService.deleteNotification(id)
-      .then(() => {
-        setNotifications(prev => prev.filter(notification => notification.id !== id));
-      })
-      .catch(error => {
-        console.error('Error deleting notification:', error);
-      });
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
   };
 
   const updateNotificationSettings = (settings: any) => {
-    // Store notification settings (would typically be saved to backend)
     localStorage.setItem('notificationSettings', JSON.stringify(settings));
   };
 
@@ -328,33 +157,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const sendNotificationToUser = (userId: string, notification: Omit<Notification, 'id' | 'userId' | 'read' | 'createdAt'>) => {
-    NotificationService.createNotification({
+    const newNotification: Notification = {
+      ...notification,
+      id: Date.now().toString(),
       userId,
-      title: notification.title,
-      message: notification.message,
-      type: notification.type,
-      priority: notification.priority,
-      actionUrl: notification.actionUrl
-    }).then(newNotification => {
-      const formattedNotification: Notification = {
-        id: newNotification.id,
-        userId: newNotification.user_id,
-        title: newNotification.title,
-        message: newNotification.message,
-        type: newNotification.type,
-        priority: newNotification.priority,
-        read: newNotification.read,
-        actionUrl: newNotification.action_url,
-        createdAt: newNotification.created_at
-      };
-      setNotifications(prev => [formattedNotification, ...prev]);
-    }).catch(error => {
-      console.error('Error sending notification:', error);
-    });
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications(prev => [newNotification, ...prev]);
   };
 
   const getAnalyticsData = (timeRange: 'week' | 'month' | 'quarter' | 'year'): AnalyticsData => {
-    // Mock analytics data - in real app, this would come from backend
     return {
       totalDonations: 1247,
       donationsChange: 12.5,

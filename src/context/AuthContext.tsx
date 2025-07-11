@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
-import { AuthService } from '../services/authService';
-import { supabase } from '../lib/supabase';
+import { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -29,94 +27,43 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const isDemo = true; // Always demo mode
 
   useEffect(() => {
-    // Check if Supabase is configured
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      setIsDemo(true);
-      setLoading(false);
-      return;
+    // Check for saved demo user
+    const savedDemoUser = localStorage.getItem('demoUser');
+    if (savedDemoUser) {
+      setUser(JSON.parse(savedDemoUser));
     }
-
-    // Get initial session
-    const getSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Error getting session:', error);
-        setIsDemo(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (isDemo) {
-      // Demo mode login
-      const demoUsers = {
-        'donor@demo.com': { id: '1', email: 'donor@demo.com', role: 'donor' },
-        'recipient@demo.com': { id: '2', email: 'recipient@demo.com', role: 'recipient' },
-        'hospital@demo.com': { id: '3', email: 'hospital@demo.com', role: 'hospital' },
-        'admin@demo.com': { id: '4', email: 'admin@demo.com', role: 'admin' }
-      };
+    // Demo mode login
+    const demoUsers = {
+      'donor@demo.com': { id: '1', email: 'donor@demo.com', name: 'John Donor', phone: '+1234567890', role: 'donor', verified: true, createdAt: new Date().toISOString() },
+      'recipient@demo.com': { id: '2', email: 'recipient@demo.com', name: 'Jane Recipient', phone: '+1234567891', role: 'recipient', verified: true, createdAt: new Date().toISOString() },
+      'hospital@demo.com': { id: '3', email: 'hospital@demo.com', name: 'City Hospital', phone: '+1234567892', role: 'hospital', verified: true, createdAt: new Date().toISOString() },
+      'admin@demo.com': { id: '4', email: 'admin@demo.com', name: 'Admin User', phone: '+1234567893', role: 'admin', verified: true, createdAt: new Date().toISOString() }
+    };
 
-      const demoUser = demoUsers[email as keyof typeof demoUsers];
-      if (demoUser) {
-        setUser(demoUser as any);
-        localStorage.setItem('demoUser', JSON.stringify(demoUser));
-      } else {
-        throw new Error('Invalid demo credentials');
-      }
+    const demoUser = demoUsers[email as keyof typeof demoUsers];
+    if (demoUser) {
+      setUser(demoUser as User);
+      localStorage.setItem('demoUser', JSON.stringify(demoUser));
     } else {
-      await AuthService.login(email, password);
+      throw new Error('Invalid demo credentials');
     }
   };
 
   const register = async (email: string, password: string, userData: any) => {
-    if (isDemo) {
-      throw new Error('Registration not available in demo mode');
-    } else {
-      await AuthService.register(email, password, userData);
-    }
+    throw new Error('Registration not available in demo mode');
   };
 
   const logout = async () => {
-    if (isDemo) {
-      setUser(null);
-      localStorage.removeItem('demoUser');
-    } else {
-      await AuthService.logout();
-    }
+    setUser(null);
+    localStorage.removeItem('demoUser');
   };
-
-  // Load demo user from localStorage on mount
-  useEffect(() => {
-    if (isDemo && !user) {
-      const savedDemoUser = localStorage.getItem('demoUser');
-      if (savedDemoUser) {
-        setUser(JSON.parse(savedDemoUser));
-      }
-    }
-  }, [isDemo, user]);
 
   const value: AuthContextType = {
     user,
