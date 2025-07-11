@@ -52,6 +52,14 @@ export class CampService {
     city?: string
   }) {
     try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_') || supabaseKey.includes('your_')) {
+        return []; // Return empty array for demo mode
+      }
+
       let query = supabase
         .from('blood_camps')
         .select(`
@@ -98,8 +106,8 @@ export class CampService {
         status: camp.status
       })) || []
     } catch (error) {
-      console.error('Get camps error:', error)
-      throw error
+      console.log('Database not available, using demo mode:', error)
+      return [] // Return empty array instead of throwing
     }
   }
 

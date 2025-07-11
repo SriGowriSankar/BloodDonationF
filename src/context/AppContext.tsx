@@ -65,6 +65,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadData = async () => {
     try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_') || supabaseKey.includes('your_')) {
+        console.log('Supabase not configured, using demo mode');
+        return;
+      }
+
       // Load requests
       const requests = await RequestService.getRequests();
       setDonationRequests(requests);
@@ -85,7 +94,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBloodInventory(inventory);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.log('Database not set up, running in demo mode:', error);
+      // Don't throw error, just run in demo mode
     }
   };
 

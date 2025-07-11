@@ -4,6 +4,14 @@ import { Notification } from '../types'
 export class NotificationService {
   static async getNotifications(userId: string) {
     try {
+      // Check if Supabase is properly configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_') || supabaseKey.includes('your_')) {
+        return []; // Return empty array for demo mode
+      }
+
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -24,8 +32,8 @@ export class NotificationService {
         createdAt: notification.created_at
       })) || []
     } catch (error) {
-      console.error('Get notifications error:', error)
-      throw error
+      console.log('Database not available, using demo mode:', error)
+      return [] // Return empty array instead of throwing
     }
   }
 
